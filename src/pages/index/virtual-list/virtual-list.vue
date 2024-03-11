@@ -1,6 +1,6 @@
 <template>
-    <scroll-view class="virtual-list" scroll-y @scroll="scroll" :style="{ height: `${visualHeight}px` }">
-        <view class="virtual-list-container" :style="{ height: `${totalHeight}px` }">
+    <scroll-view class="virtual-list" scroll-y @scroll="scroll" :style="`height:${visualHeight}px`">
+        <view class="virtual-list-container" :style="`height:${totalHeight}px`">
             <view class="virtual-item-container" :style="`transform: translateY(${contentTop}px)`">
                 <slot></slot>
             </view>
@@ -21,7 +21,7 @@ const props = withDefaults(
     }>(),
     {
         items: () => [],
-        buffer: 0
+        buffer: 10
     }
 )
 
@@ -54,8 +54,8 @@ watch([() => props.items, () => props.height, () => props.buffer], () => {
 function scroll(event: any) {
     const source = virtualScroll.virtualItems
     const s = Math.abs(event.target.scrollTop - virtualScroll.scrollTop)
-    console.log(s)
-    if (s < 80) {
+    // console.log(s)
+    if (s < 100) {
         return
     }
     virtualScroll.setScrollTop(event.target.scrollTop)

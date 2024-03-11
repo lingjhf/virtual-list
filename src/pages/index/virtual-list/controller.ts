@@ -27,7 +27,7 @@ export class VirtualScroll {
     this.setItems(options.items)
   }
 
-  private _buffer = 0;
+  private _buffer = 10;
 
   private _viewHeight = 0;
 
@@ -37,17 +37,13 @@ export class VirtualScroll {
 
   private _scrollTop = 0;
 
-  private _startIndex = 0;
+  private _startIndex = -1;
 
-  private _endIndex = 0;
+  private _endIndex = -1;
 
   private _items: VirtualScrollItem[] = [];
 
   private _virtualItems: VirtualScrollItem[] = [];
-
-  private _beforeBufferItems: VirtualScrollItem[] = [];
-
-  private _afterBufferItems: VirtualScrollItem[] = [];
 
   get buffer(): number {
     return this._buffer;
@@ -130,45 +126,25 @@ export class VirtualScroll {
     return this;
   }
 
-  private _isRenderBeforeBufferItems() {
-    if (this._beforeBufferItems.length > 0) {
-      const item = this._beforeBufferItems[this._beforeBufferItems.length];
-      if (item && !(item.y + item.height > this._scrollTop)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  private _isRenderAfterBufferItems() {
-    if (this._afterBufferItems.length > 0) {
-      const item = this._afterBufferItems[this._afterBufferItems.length];
-      if (item && !(item.y < this._scrollTop + this._viewHeight)) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   private _resetVirtualItems() {
-    this._startIndex = this._findStartIndex(0, this._items.length - 1);
-    if (this._startIndex === -1) return [];
-    const viewItems = this._generateViewItems(this._startIndex);
-    this._endIndex = this._startIndex + viewItems.length - 1;
-    const isReset =
-      this._scrollDirection > 0
-        ? this._isRenderAfterBufferItems()
-        : this._isRenderBeforeBufferItems();
-    if (isReset) {
-      this._afterBufferItems = this._generateAfterBufferItems(this._endIndex);
-      this._beforeBufferItems = this._generateBeforeBufferItems(
-        this._startIndex
-      );
-      this._virtualItems = [
-        ...this._beforeBufferItems,
-        ...viewItems,
-        ...this._afterBufferItems,
-      ];
+    if (this._startIndex === -1) {
+      this._startIndex = this._findStartIndex(this._items, 0, this._items.length - 1);
+      if (this._startIndex === -1) return;
+    }
+    if (this._endIndex === -1) {
+      this._endIndex = this._findEndIndex(this._startIndex);
+      if (this._endIndex === -1) return;
+    }
+    const [boundaryStartIndex, boundaryEndIndex] = getExtendRange(0, this._items.length - 1, this._startIndex, this._endIndex, this._buffer / 2)
+    const boundaryStartItem = this._items[boundaryStartIndex]
+    const boundaryEndItem = this._items[boundaryEndIndex]
+    if (this._virtualItems.length === 0 || boundaryStartItem.y > this._scrollTop || boundaryEndItem.y + boundaryEndItem.height < this._scrollTop + this._viewHeight) {
+      this._startIndex = this._findStartIndex(this._virtualItems, 0, this._items.length - 1)
+      if (this._startIndex === -1) return;
+      this._endIndex = this._findEndIndex(this._startIndex);
+      if (this._endIndex === -1) return;
+      const [startIndex, endIndex] = getExtendRange(0, this._items.length - 1, this._startIndex, this._endIndex, this._buffer)
+      this._virtualItems = this._items.slice(startIndex, endIndex + 1)
     }
   }
 
@@ -185,36 +161,7 @@ export class VirtualScroll {
     return vItems;
   }
 
-  private _generateBeforeBufferItems(startIndex: number): VirtualScrollItem[] {
-    if (startIndex > 0) {
-      const startBuffer = startIndex - this._buffer;
-      return this._items.slice(startBuffer < 0 ? 0 : startBuffer, startIndex);
-    }
-    return [];
-  }
-
-  private _generateAfterBufferItems(endIndex: number): VirtualScrollItem[] {
-    if (endIndex < this._items.length - 1) {
-      const bufferStartIndex = endIndex + 1;
-      const bufferEndIndex = bufferStartIndex + this._buffer;
-      return this._items.slice(bufferStartIndex, bufferEndIndex);
-    }
-    return [];
-  }
-
-  private _generateViewItems(startIndex: number): VirtualScrollItem[] {
-    const items: VirtualScrollItem[] = [];
-    for (let i = startIndex; i < this._items.length; i++) {
-      const item = this._items[i];
-      items.push(item);
-      if (item.y + item.height >= this._scrollTop + this._viewHeight) {
-        break;
-      }
-    }
-    return items;
-  }
-
-  private _findStartIndex(startIndex: number, endIndex: number): number {
+  private _findStartIndex(items: VirtualScrollItem[], startIndex: number, endIndex: number): number {
     if (startIndex > endIndex) {
       return -1;
     }
@@ -227,14 +174,46 @@ export class VirtualScroll {
       (middleItem.y > this._scrollTop && viewSum >= middleItemSum) ||
       (middleItem.y > this._scrollTop && middleItemSum > viewSum)
     ) {
-      return this._findStartIndex(startIndex, middleIndex - 1);
+      return this._findStartIndex(items, startIndex, middleIndex - 1);
     }
     if (this._scrollTop >= middleItemSum) {
-      return this._findStartIndex(middleIndex + 1, endIndex);
+      return this._findStartIndex(items, middleIndex + 1, endIndex);
     }
     if (middleItem.y <= this._scrollTop && middleItemSum > this.scrollTop) {
       return middleIndex;
     }
     return -1;
   }
+
+  private _findEndIndex(startIndex: number): number {
+    for (let i = startIndex; i < this._items.length; i++) {
+      const item = this._items[i];
+      if (item.y + item.height >= this._scrollTop + this._viewHeight) {
+        return item.index
+      }
+    }
+    return -1
+  }
+}
+
+
+function getExtendRange(min: number, max: number, startIndex: number, endIndex: number, buffer: number): [startIndex: number, endIndex: number] {
+  let bufferStartIndex = startIndex - buffer
+  let bufferEndIndex = endIndex + buffer
+  if (bufferStartIndex < min) {
+    bufferEndIndex += Math.abs(bufferStartIndex - min)
+    if (bufferEndIndex > max) {
+      bufferEndIndex = max
+    }
+    bufferStartIndex = min
+  }
+  if (bufferEndIndex > max) {
+    bufferStartIndex -= Math.abs(bufferEndIndex - max)
+    if (bufferStartIndex < min) {
+      bufferStartIndex = min
+    }
+    bufferEndIndex = max
+  }
+
+  return [bufferStartIndex, bufferEndIndex]
 }

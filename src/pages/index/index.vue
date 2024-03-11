@@ -1,6 +1,6 @@
 <template>
   <view>
-    <VirtualList :items="items" :height="300" :buffer="100" @itemsChange="itemsChange">
+    <VirtualList :items="items" :height="300" :buffer="10" @itemsChange="itemsChange">
       <view class="virtual-item" v-for="item in virtualItems" :key="item.y" :style="{ height: `${item.height}px` }">
         <button @tap="checked(item)">{{ item.checked }}</button>
         {{ item.id }}
@@ -16,7 +16,7 @@ import VirtualList from './virtual-list/virtual-list.vue';
 import type { VirtualScrollItemRaw, VirtualScrollItem } from './virtual-list/controller'
 import { ref } from 'vue';
 
-const items = ref(Array.from({ length: 2000 }, (_, index) => ({ id: index, height: getRandom(40, 120), checked: false } as VirtualScrollItemRaw)))
+const items = ref(Array.from({ length: 20000 }, (_, index) => ({ id: index, height: getRandom(40, 120), checked: false } as VirtualScrollItemRaw)))
 
 const virtualItems = ref<VirtualScrollItem[]>([])
 
