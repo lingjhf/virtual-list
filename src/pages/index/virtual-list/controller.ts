@@ -24,11 +24,7 @@ export class VirtualScroll {
     this.setScrollTop(options.scrollTop ?? 0);
     this.setViewHeight(options.viewHeight);
     this.setBuffer(options.buffer ?? 0);
-    this._items = this._generateItems(options.items);
-    const lastItem = this.getLastItem();
-    if (lastItem) {
-      this._totalHeight = lastItem.y + lastItem.height;
-    }
+    this.setItems(options.items)
   }
 
   private _buffer = 0;
@@ -100,6 +96,15 @@ export class VirtualScroll {
     return this._virtualItems;
   }
 
+  setItems(items: VirtualScrollItemRaw[]): this {
+    this._items = this._generateItems(items)
+    const lastItem = this.getLastItem();
+    if (lastItem) {
+      this._totalHeight = lastItem.y + lastItem.height;
+    }
+    return this
+  }
+
   setBuffer(value: number): this {
     if (value < 0) {
       return this;
@@ -146,7 +151,7 @@ export class VirtualScroll {
   }
 
   private _resetVirtualItems() {
-    this._startIndex = this.findStartIndex(0, this._items.length - 1);
+    this._startIndex = this._findStartIndex(0, this._items.length - 1);
     if (this._startIndex === -1) return [];
     const viewItems = this._generateViewItems(this._startIndex);
     this._endIndex = this._startIndex + viewItems.length - 1;
@@ -172,7 +177,9 @@ export class VirtualScroll {
     const vItems: VirtualScrollItem[] = [];
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      vItems.push({ ...item, index: i, y: totalHeight });
+      item['index'] = i
+      item['y'] = totalHeight
+      vItems.push(item as VirtualScrollItem);
       totalHeight += item.height;
     }
     return vItems;
@@ -207,7 +214,7 @@ export class VirtualScroll {
     return items;
   }
 
-  private findStartIndex(startIndex: number, endIndex: number): number {
+  private _findStartIndex(startIndex: number, endIndex: number): number {
     if (startIndex > endIndex) {
       return -1;
     }
@@ -220,10 +227,10 @@ export class VirtualScroll {
       (middleItem.y > this._scrollTop && viewSum >= middleItemSum) ||
       (middleItem.y > this._scrollTop && middleItemSum > viewSum)
     ) {
-      return this.findStartIndex(startIndex, middleIndex - 1);
+      return this._findStartIndex(startIndex, middleIndex - 1);
     }
     if (this._scrollTop >= middleItemSum) {
-      return this.findStartIndex(middleIndex + 1, endIndex);
+      return this._findStartIndex(middleIndex + 1, endIndex);
     }
     if (middleItem.y <= this._scrollTop && middleItemSum > this.scrollTop) {
       return middleIndex;

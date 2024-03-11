@@ -6,17 +6,17 @@
             </view>
         </view>
     </scroll-view>
-    {{ totalHeight }}
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { VirtualScroll, type VirtualScrollItem } from './controller'
+import { VirtualScroll } from './controller'
+import type { VirtualScrollItem, VirtualScrollItemRaw } from './controller'
 
 const props = withDefaults(
     defineProps<{
         height: number
-        items?: VirtualScrollItem[]
+        items?: VirtualScrollItemRaw[]
         buffer?: number
     }>(),
     {
@@ -35,19 +35,15 @@ const totalHeight = ref(0)
 const contentTop = ref(0)
 
 watch([() => props.items, () => props.height, () => props.buffer], () => {
-    let items = virtualScroll.items
-    let viewHeight = virtualScroll.viewHeight
-    let buffer = virtualScroll.buffer
     if (props.items.length > 0) {
-        items = props.items
+        virtualScroll.setItems(props.items)
     }
     if (props.height > 0 && props.height !== virtualScroll.viewHeight) {
-        viewHeight = props.height
+        virtualScroll.setViewHeight(props.height)
     }
     if (props.buffer >= 0 && props.buffer !== virtualScroll.buffer) {
-        buffer = props.buffer
+        virtualScroll.setBuffer(props.buffer)
     }
-    virtualScroll = new VirtualScroll({ items, viewHeight, buffer })
     visualHeight.value = virtualScroll.viewHeight
     totalHeight.value = virtualScroll.totalHeight
     emits('itemsChange', virtualScroll.virtualItems)
@@ -57,6 +53,11 @@ watch([() => props.items, () => props.height, () => props.buffer], () => {
 
 function scroll(event: any) {
     const source = virtualScroll.virtualItems
+    const s = Math.abs(event.target.scrollTop - virtualScroll.scrollTop)
+    console.log(s)
+    if (s < 80) {
+        return
+    }
     virtualScroll.setScrollTop(event.target.scrollTop)
     contentTop.value = virtualScroll.virtualItems[0].y
     const target = virtualScroll.virtualItems
