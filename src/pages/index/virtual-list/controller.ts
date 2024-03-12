@@ -135,15 +135,15 @@ export class VirtualScroll {
       this._endIndex = this._findEndIndex(this._startIndex);
       if (this._endIndex === -1) return;
     }
-    const [boundaryStartIndex, boundaryEndIndex] = getExtendRange(0, this._items.length - 1, this._startIndex, this._endIndex, this._buffer / 2)
+    const [boundaryStartIndex, boundaryEndIndex] = getBufferRangeIndex(0, this._items.length - 1, this._startIndex, this._endIndex, this._buffer / 2)
     const boundaryStartItem = this._items[boundaryStartIndex]
     const boundaryEndItem = this._items[boundaryEndIndex]
     if (this._virtualItems.length === 0 || boundaryStartItem.y > this._scrollTop || boundaryEndItem.y + boundaryEndItem.height < this._scrollTop + this._viewHeight) {
-      this._startIndex = this._findStartIndex(0, this._items.length - 1)
+      this._startIndex = this._scrollDirection < 0 ? this._findStartIndex(0, this._endIndex) : this._findStartIndex(this._startIndex, this._items.length - 1)
       if (this._startIndex === -1) return;
       this._endIndex = this._findEndIndex(this._startIndex);
       if (this._endIndex === -1) return;
-      const [startIndex, endIndex] = getExtendRange(0, this._items.length - 1, this._startIndex, this._endIndex, this._buffer)
+      const [startIndex, endIndex] = getBufferRangeIndex(0, this._items.length - 1, this._startIndex, this._endIndex, this._buffer)
       this._virtualItems = this._items.slice(startIndex, endIndex + 1)
     }
   }
@@ -197,7 +197,7 @@ export class VirtualScroll {
 }
 
 
-function getExtendRange(min: number, max: number, startIndex: number, endIndex: number, buffer: number): [startIndex: number, endIndex: number] {
+function getBufferRangeIndex(min: number, max: number, startIndex: number, endIndex: number, buffer: number): [startIndex: number, endIndex: number] {
   let bufferStartIndex = startIndex - buffer
   let bufferEndIndex = endIndex + buffer
   if (bufferStartIndex < min) {
