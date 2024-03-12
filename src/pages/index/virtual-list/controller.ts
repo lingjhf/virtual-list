@@ -128,7 +128,7 @@ export class VirtualScroll {
 
   private _resetVirtualItems() {
     if (this._startIndex === -1) {
-      this._startIndex = this._findStartIndex(this._items, 0, this._items.length - 1);
+      this._startIndex = this._findStartIndex(0, this._items.length - 1);
       if (this._startIndex === -1) return;
     }
     if (this._endIndex === -1) {
@@ -139,7 +139,7 @@ export class VirtualScroll {
     const boundaryStartItem = this._items[boundaryStartIndex]
     const boundaryEndItem = this._items[boundaryEndIndex]
     if (this._virtualItems.length === 0 || boundaryStartItem.y > this._scrollTop || boundaryEndItem.y + boundaryEndItem.height < this._scrollTop + this._viewHeight) {
-      this._startIndex = this._findStartIndex(this._virtualItems, 0, this._items.length - 1)
+      this._startIndex = this._findStartIndex(0, this._items.length - 1)
       if (this._startIndex === -1) return;
       this._endIndex = this._findEndIndex(this._startIndex);
       if (this._endIndex === -1) return;
@@ -161,7 +161,7 @@ export class VirtualScroll {
     return vItems;
   }
 
-  private _findStartIndex(items: VirtualScrollItem[], startIndex: number, endIndex: number): number {
+  private _findStartIndex(startIndex: number, endIndex: number): number {
     if (startIndex > endIndex) {
       return -1;
     }
@@ -174,10 +174,10 @@ export class VirtualScroll {
       (middleItem.y > this._scrollTop && viewSum >= middleItemSum) ||
       (middleItem.y > this._scrollTop && middleItemSum > viewSum)
     ) {
-      return this._findStartIndex(items, startIndex, middleIndex - 1);
+      return this._findStartIndex(startIndex, middleIndex - 1);
     }
     if (this._scrollTop >= middleItemSum) {
-      return this._findStartIndex(items, middleIndex + 1, endIndex);
+      return this._findStartIndex(middleIndex + 1, endIndex);
     }
     if (middleItem.y <= this._scrollTop && middleItemSum > this.scrollTop) {
       return middleIndex;
